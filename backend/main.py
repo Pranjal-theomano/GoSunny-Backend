@@ -16,11 +16,11 @@ def index():
 def register_user():
     try:
         data = request.json
-        address_data = data.get('address')
+        # address_data = data.get('address')
         monthly_bill = data.get('monthly_bill')
         
         payload = {
-            "address_data": address_data,
+            # "address_data": address_data,
             "monthly_bill": monthly_bill,
         }
         user = save_user_data(collection, payload)
