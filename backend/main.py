@@ -17,11 +17,19 @@ def register_user():
     try:
         data = request.json
         # address_data = data.get('address')
-        monthly_bill = data.get('monthly_bill')
+        # monthly_bill = data.get('monthly_bill')
+        
+        # payload = {
+        #     # "address_data": address_data,
+        #     "monthly_bill": monthly_bill,
+        # }
         
         payload = {
-            # "address_data": address_data,
-            "monthly_bill": monthly_bill,
+            "firstName": data.get('firstName'),
+            "lastName": data.get('lastName'),
+            "email": data.get('email'),
+            "phone": data.get('phone'),
+            "address": data.get('address')
         }
         user = save_user_data(collection, payload)
         logger.info(f"User registered with user_id {user.inserted_id}")
