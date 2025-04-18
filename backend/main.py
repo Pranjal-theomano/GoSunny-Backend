@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
-from config import collection, logger
+from config import collection, logger, client
 from utils.mongo_ops import save_user_data, save_chat_message
+import json
 
 
 app = Flask(__name__)
@@ -61,53 +62,50 @@ def save_chat():
         logger.error(error_message)
         return jsonify({"status": False, "message": "Internal server error", "error": str(e)}), 500
 
-# def add_message_to_chat(user_id, msg):
-#     update_chat(collection, user_id, msg)
+def add_message_to_chat(user_id, msg):
+    update_chat(collection, user_id, msg)
 
-# def get_stream_chat_completion(user_id):
-#     messages = get_chat_history(user_id, collection)
-#     messages.insert(0, {"role": "system", "content": instructions})
+def get_stream_chat_completion(user_id, messages):
 
-#     openai_stream = client.chat.completions.create(
-#         model="gpt-4o",
-#         messages=messages,
-#         temperature=0.01,
-#         stream=True
-#     )
-#     final_text = ""
-#     token_number = 0
-#     for event in openai_stream:
-#         if hasattr(event.choices[0].delta, "content"):
-#             current_response = event.choices[0].delta.content
-#             if current_response:
-#                 final_text += current_response
-#                 token_number += 1
-#                 yield json.dumps({
-#                     "token_number": token_number,
-#                     "data": current_response,
-#                     "last_token": False,
-#                 }).encode('utf-8') + b'\n\n'
-#     add_message_to_chat(user_id, {"role": "assistant", "content": final_text})
-#     yield json.dumps({
-#         "token_number": token_number,
-#         "last_token": True,
-#         "final_text": final_text
-#     }).encode('utf-8') + b'\n\n'
+    openai_stream = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages,
+        temperature=0.01,
+        stream=True
+    )
+    final_text = ""
+    token_number = 0
+    for event in openai_stream:
+        if hasattr(event.choices[0].delta, "content"):
+            current_response = event.choices[0].delta.content
+            if current_response:
+                final_text += current_response
+                token_number += 1
+                yield json.dumps({
+                    "token_number": token_number,
+                    "data": current_response,
+                    "last_token": False,
+                }).encode('utf-8') + b'\n\n'
+    logger.info(f"Final text: {final_text}")
+    yield json.dumps({
+        "token_number": token_number,
+        "last_token": True,
+        "final_text": final_text
+    }).encode('utf-8') + b'\n\n'
 
-# @app.route("/chat_sunny", methods=["POST"])
-# def chat_sunny():
-#     try:
-#         data = request.json
-#         user_msg = data.get('content', '')
-#         user_id = data.get('userId')
-#         context = {"role": "user", "content": user_msg}
-#         add_message_to_chat(user_id, context)
-#         logger.info(f"Chat context for user_id {user_id}: {context}")
-#         return Response(get_stream_chat_completion(user_id), content_type='text/event-stream')
-#     except Exception as e:
-#         error_message = f"Error in stream_chat_completion for user_id {user_id}: {str(e)}"
-#         logger.error(error_message)
-#         return jsonify({"status": False, "message": "Internal server error", "error": str(e)}), 500
+@app.route("/chat_sunny", methods=["POST"])
+def chat_sunny():
+    try:
+        data = request.json
+        user_msg = data.get('content', '')
+        user_id = data.get('userId')
+        context = [{"role": "user", "content": user_msg}]
+        logger.info(f"Chat context for user_id {user_id}: {context}")
+        return Response(get_stream_chat_completion(user_id, context), content_type='text/event-stream')
+    except Exception as e:
+        error_message = f"Error in stream_chat_completion for user_id {user_id}: {str(e)}"
+        logger.error(error_message)
+        return jsonify({"status": False, "message": "Internal server error", "error": str(e)}), 500
 
 
 if __name__ == '__main__':
