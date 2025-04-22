@@ -12,7 +12,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY","pick it from env")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 logger = logging.getLogger(__name__)
